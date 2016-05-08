@@ -11,6 +11,9 @@ data Joy = JoyNumber Integer
 
 -- Combinators
 
+i :: [Joy] -> [Joy]
+i ((JoyQuote x) : xs) = eval x xs
+
 -- Compiler
 
 -- The evaluator for a Joy program
