@@ -43,4 +43,4 @@ much in the way of reference material on this language.
     [D] [C] [B] [A] s'   == [[D] C] A [D] B
     [D] [C] [B] [A] j    == [[C] [D] A] [B] A
 [E] [D] [C] [B] [A] j'   == [[D] A [E] B] [C] B
-``
+```
