@@ -3,7 +3,7 @@ module Language.Joy.Core where
 import           Control.Applicative ((<$>))
 import qualified Data.Map            as M
 
-import           Language.Joy.Parser
+import           Language.Joy.Parser(parseJoy, Joy(..))
 
 -----------------------------------------
 -- | Standard lib
@@ -80,8 +80,8 @@ type ProgramStack = [Joy]
 eval :: RuntimeStack -> ProgramStack -> M.Map String JoyF -> [Joy]
 eval s [] env = s
 eval stack (value@(JoyBool _) : xs) env = eval (value : stack) xs env
-eval stack (value@(JoyNumber _) : xs) env= eval (value : stack) xs env
-eval stack (value@(JoyQuote _) : xs)  env = eval (value : stack) xs env
+eval stack (value@(JoyNumber _) : xs) env = eval (value : stack) xs env
+eval stack (value@(JoyQuote _) : xs) env = eval (value : stack) xs env
 eval stack (value@(JoyLiteral l) : xs) env = case (M.lookup l prelude) of
                                              Just f ->
                                                case (f stack) of
