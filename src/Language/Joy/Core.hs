@@ -3,7 +3,7 @@ module Language.Joy.Core where
 import           Control.Applicative ((<$>))
 import qualified Data.Map            as M
 
-import           Language.Joy.Parser(parseJoy, Joy(..))
+import           Language.Joy.Parser (parseJoy, Joy(..))
 
 -----------------------------------------
 -- | Standard lib
