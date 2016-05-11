@@ -37,7 +37,7 @@ parseList =  do
 
 parseLiteral :: Parser Joy
 parseLiteral = do
-    x <- many1 letter
+    x <- many1 (alphaNum <|> oneOf ['+', '-', '*'])
     return $ JoyLiteral x
 
 -----------------------------------------
