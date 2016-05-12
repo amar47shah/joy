@@ -3,8 +3,7 @@ module Language.Joy.Core where
 import           Control.Applicative ((<$>))
 import qualified Data.Map            as M
 
-import           Language.Joy.Parser (parseJoy, Joy(..))
-
+import           Language.Joy.Parser (Joy (..), parseJoy)
 -----------------------------------------
 -- | Standard lib
 -----------------------------------------
@@ -40,13 +39,20 @@ zap (x:xs) = pure xs
 zap _ = Left "invalid state"
 
 -- Cat, cons and unit
-
+cons :: JoyF
 cons (JoyQuote qs : x : xs) = pure $ JoyQuote (x : qs) : xs
 cons _ = Left "invalid state"
 
 -- Cat takes two quotations and concatenates them together
+cat :: JoyF
 cat (JoyQuote xs : JoyQuote ys : tl) = pure $ JoyQuote (xs ++ ys) : tl
 cat _ = Left "invalid state"
+
+first :: JoyF
+first (JoyQuote (x:xs) : ys) = pure $ x : JoyQuote xs : ys
+first _ = Left "invalid state"
+
+-- [map +]
 
 -----------------------------------------
 -- | Combinators
@@ -68,6 +74,7 @@ prelude =
                , ("zap", zap)
                , ("cons", cons)
                , ("cat", cat)
+               , ("first", first)
                ]
 
 -----------------------------------------
