@@ -1,6 +1,10 @@
 module Language.Joy.Parser
        ( Joy(..)
        , parseJoy
+       , parseNumber
+       , parseString
+       , parseAssignment
+       , testParser
        ) where
 
 import           Control.Applicative                ((<$>))
@@ -39,6 +43,10 @@ instance Pretty Joy where
 -----------------------------------------
 -- | Parsers
 -----------------------------------------
+
+whiteSpace :: Parser a -> Parser a
+whiteSpace p = spaces *> p <* spaces
+
 parseNumber :: Parser Joy
 parseNumber = (JoyNumber . read) <$> many1 digit
 
@@ -75,19 +83,24 @@ parseLiteral = do
 -- fac  == [null] [succ] [dup pred] [*] linrec
 parseAssignment :: Parser Joy
 parseAssignment = do
-    var <- spaces *> (many1 alphaNum) <* spaces
+    var <- whiteSpace $ many1 alphaNum
     string "=="
-    expr <- many1 (spaces *> parseExpr <* spaces)
+    expr <- many1 (whiteSpace parseExpr)
     return $ JoyAssignment var expr
 
 -----------------------------------------
 
 parseExpr :: Parser Joy
-parseExpr = parseList <|> parseNumber <|> parseString <|> parseLiteral <|> parseComment
+parseExpr = (try parseAssignment)
+        <|> parseList
+        <|> parseNumber
+        <|> parseString
+        <|> parseLiteral
+        <|> parseComment
 
-testParse :: (Parser a) -> String -> Either ParseError a
-testParse p input = parse p " " input
+testParser :: (Parser a) -> String -> Either ParseError a
+testParser p input = parse p " " input
 
 parseJoy :: String -> Either ParseError JoyProgram
 parseJoy input = parse parser "JOY" input
-    where parser = many1 (spaces *> parseExpr <* spaces)
+    where parser = many1 (whiteSpace parseExpr)
