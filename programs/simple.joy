@@ -1,2 +1,1 @@
-(* Dupliate a number *)
-square == dup *
+1 2 dup *

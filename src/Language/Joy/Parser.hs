@@ -3,6 +3,8 @@ module Language.Joy.Parser
        , parseJoy
        , parseNumber
        , parseString
+       , parseComment
+       , parseLiteral
        , parseAssignment
        , testParser
        ) where

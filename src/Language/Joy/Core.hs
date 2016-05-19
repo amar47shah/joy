@@ -89,6 +89,7 @@ eval s [] env = s
 eval stack (value@(JoyBool _) : xs) env = eval (value : stack) xs env
 eval stack (value@(JoyNumber _) : xs) env = eval (value : stack) xs env
 eval stack (value@(JoyQuote _) : xs) env = eval (value : stack) xs env
+eval stack (value@(JoyAssignment k f) : xs) env = eval stack xs env
 eval stack (value@(JoyLiteral l) : xs) env = case (M.lookup l prelude) of
                                              Just f ->
                                                case (f stack) of
