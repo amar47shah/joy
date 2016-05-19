@@ -19,6 +19,23 @@ data Joy = JoyNumber Integer
          | JoyComment String
            deriving ( Show, Eq )
 
+class Pretty a where
+    showJoy :: a -> String
+
+instance Pretty Joy where
+    showJoy (JoyNumber x) = show x
+    showJoy (JoyLiteral x) = x
+    showJoy (JoyString x) = x
+    showJoy (JoyQuote xs) =
+        let innerForms = map showJoy xs
+            lBrace = ["["]
+            rBrace = ["]"]
+       in
+        mconcat . concat $ [lBrace, innerForms, rBrace]
+    showJoy (JoyBool x) = show x
+    showJoy (JoyAssignment k p) = k
+    showJoy (JoyComment x) = ""
+
 -----------------------------------------
 -- | Parsers
 -----------------------------------------
@@ -54,10 +71,22 @@ parseLiteral = do
     x <- many1 (alphaNum <|> oneOf ['+', '-', '*'])
     return $ JoyLiteral x
 
+-- Assigment in Joy
+-- fac  == [null] [succ] [dup pred] [*] linrec
+parseAssignment :: Parser Joy
+parseAssignment = do
+    var <- spaces *> (many1 alphaNum) <* spaces
+    string "=="
+    expr <- many1 (spaces *> parseExpr <* spaces)
+    return $ JoyAssignment var expr
+
 -----------------------------------------
 
 parseExpr :: Parser Joy
 parseExpr = parseList <|> parseNumber <|> parseString <|> parseLiteral <|> parseComment
+
+testParse :: (Parser a) -> String -> Either ParseError a
+testParse p input = parse p " " input
 
 parseJoy :: String -> Either ParseError JoyProgram
 parseJoy input = parse parser "JOY" input
