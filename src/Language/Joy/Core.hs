@@ -52,11 +52,19 @@ first :: JoyF
 first (JoyQuote (x:xs) : ys) = pure $ x : JoyQuote xs : ys
 first _ = Left "invalid state"
 
+unit :: JoyF
+unit (x:xs) = pure $ (JoyQuote [x]) : xs
+unit [] = pure $ (JoyQuote []) : []
+
 -- [map +]
 
 -----------------------------------------
 -- | Combinators
 -----------------------------------------
+
+i :: JoyF
+i ((JoyQuote qs) : xs) = pure $ qs ++ xs
+i _ = Left "invalid state"
 
 -----------------------------------------
 -- | Prelude env
@@ -66,6 +74,7 @@ prelude :: M.Map String JoyF
 prelude =
     M.fromList [ ("+", add)
                , ("*", mult)
+               , ("unit", unit)
                , ("swap", swap)
                , ("dup", dup)
                , ("zap", zap)
@@ -93,6 +102,13 @@ eval stack (value@(JoyQuote _) : xs) env =
     eval (value : stack) xs env
 eval stack (value@(JoyAssignment k f) : xs) env =
     eval stack xs (M.insert k f env)
+
+-- I Combinator is a special case ?
+eval stack (value@(JoyLiteral "i") : xs) env =
+    case (i stack) of
+       Left e -> error . show $ e
+       Right ns -> eval ns xs env
+
 eval stack (value@(JoyLiteral l) : xs) env =
     case (M.lookup l prelude) of
       -- Try the native env first
