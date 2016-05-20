@@ -12,7 +12,7 @@ repl :: IO a
 repl = do
   input <- getLine
   case (Joy.runJoy input) of
-    Right value -> putStrLn (show value)
+    Right value -> print . show $ value
     Left e -> print . show $ e
   repl
 
