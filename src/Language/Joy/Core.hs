@@ -84,6 +84,7 @@ type ProgramStack = [Joy]
 
 eval :: RuntimeStack -> ProgramStack -> M.Map String [Joy] -> [Joy]
 eval s [] env = s
+eval stack (value@(JoyComment _) : xs) env = eval stack xs env
 eval stack (value@(JoyBool _) : xs) env =
     eval (value : stack) xs env
 eval stack (value@(JoyNumber _) : xs) env =
@@ -97,12 +98,13 @@ eval stack (value@(JoyLiteral l) : xs) env =
       -- Try the native env first
       Just f -> case (f stack) of
                   Left e ->
-                    -- Try the user defined env
-                    case (M.lookup l env) of
-                      Just p -> eval stack xs env
-                      Nothing -> error e
+                     error $ "Failed to apply " ++ (show e)
                   Right s -> eval s xs env
-      Nothing -> error $ "Unbound literal " ++ l
+      Nothing ->
+          -- If native lookup fails then try user defined env
+          case (M.lookup l env) of
+                      Just p -> eval stack (p++xs) env
+                      Nothing -> error $ "Unbound literal " ++ l ++ " " ++ (show stack)
 
 runJoy :: String -> Either String [Joy]
 runJoy input =

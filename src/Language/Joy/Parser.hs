@@ -88,9 +88,11 @@ parseLiteral = do
 -- fac  == [null] [succ] [dup pred] [*] linrec
 parseAssignment :: Parser Joy
 parseAssignment = do
+    string "let"
     var <- whiteSpace $ many1 alphaNum
-    string "=="
+    string "="
     expr <- many1 (whiteSpace parseExpr)
+    spaces *> char ';'
     return $ JoyAssignment var expr
 
 -----------------------------------------
