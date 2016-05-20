@@ -58,9 +58,6 @@ first _ = Left "invalid state"
 -- | Combinators
 -----------------------------------------
 
-i :: [Joy] -> [Joy]
-i ((JoyQuote x) : xs) = eval x xs prelude
-
 -----------------------------------------
 -- | Prelude env
 -----------------------------------------
@@ -76,7 +73,6 @@ prelude =
                , ("cat", cat)
                , ("first", first)
                ]
-
 -----------------------------------------
 -- | Compiler
 -----------------------------------------
@@ -84,21 +80,32 @@ prelude =
 type RuntimeStack = [Joy]
 type ProgramStack = [Joy]
 
-eval :: RuntimeStack -> ProgramStack -> M.Map String JoyF -> [Joy]
+-- square = dup *
+
+eval :: RuntimeStack -> ProgramStack -> M.Map String [Joy] -> [Joy]
 eval s [] env = s
-eval stack (value@(JoyBool _) : xs) env = eval (value : stack) xs env
-eval stack (value@(JoyNumber _) : xs) env = eval (value : stack) xs env
-eval stack (value@(JoyQuote _) : xs) env = eval (value : stack) xs env
-eval stack (value@(JoyAssignment k f) : xs) env = eval stack xs env
-eval stack (value@(JoyLiteral l) : xs) env = case (M.lookup l prelude) of
-                                             Just f ->
-                                               case (f stack) of
-                                                 Left e -> error e
-                                                 Right s -> eval s xs env
-                                             Nothing -> error "Unbound literal"
+eval stack (value@(JoyBool _) : xs) env =
+    eval (value : stack) xs env
+eval stack (value@(JoyNumber _) : xs) env =
+    eval (value : stack) xs env
+eval stack (value@(JoyQuote _) : xs) env =
+    eval (value : stack) xs env
+eval stack (value@(JoyAssignment k f) : xs) env =
+    eval stack xs (M.insert k f env)
+eval stack (value@(JoyLiteral l) : xs) env =
+    case (M.lookup l prelude) of
+      -- Try the native env first
+      Just f -> case (f stack) of
+                  Left e ->
+                    -- Try the user defined env
+                    case (M.lookup l env) of
+                      Just p -> eval stack xs env
+                      Nothing -> error e
+                  Right s -> eval s xs env
+      Nothing -> error $ "Unbound literal " ++ l
 
 runJoy :: String -> Either String [Joy]
 runJoy input =
     case (parseJoy input) of
-      Right program -> Right $ eval [] program prelude
+      Right program -> Right $ eval [] program M.empty
       Left e -> Left (show e)

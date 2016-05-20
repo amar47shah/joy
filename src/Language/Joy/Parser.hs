@@ -47,7 +47,10 @@ instance Pretty Joy where
 -----------------------------------------
 
 whiteSpace :: Parser a -> Parser a
-whiteSpace p = spaces *> p <* spaces
+whiteSpace p = many (char ' ') *> p <* many (char ' ')
+
+lexi :: Parser a -> Parser a
+lexi p = spaces *> p <* spaces
 
 parseNumber :: Parser Joy
 parseNumber = (JoyNumber . read) <$> many1 digit
@@ -105,4 +108,4 @@ testParser p input = parse p " " input
 
 parseJoy :: String -> Either ParseError JoyProgram
 parseJoy input = parse parser "JOY" input
-    where parser = many1 (whiteSpace parseExpr)
+    where parser = many1 (lexi parseExpr)
