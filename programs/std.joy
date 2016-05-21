@@ -1,0 +1,10 @@
+(* Standard Library *)
+
+(* Applicative combinators *)
+
+let w = [dup] dip i ;
+let k = [zap] dip i ;
+let b = [cons] dip i ;
+let c = [swap] dip i ;
+
+1 2 3 dup zap

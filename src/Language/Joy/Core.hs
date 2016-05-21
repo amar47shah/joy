@@ -1,9 +1,9 @@
 module Language.Joy.Core where
 
-import           Control.Applicative ((<$>))
+import           Control.Applicative ((<$>), (<*>))
 import qualified Data.Map            as M
 
-import           Language.Joy.Parser (Joy (..), parseJoy)
+import           Language.Joy.Parser (Joy (..), parseJoy, pprint)
 -----------------------------------------
 -- | Standard lib
 -----------------------------------------
@@ -16,9 +16,9 @@ data JoyError = InvalidState | RuntimeException String
 push :: [a] -> a -> [a]
 push xs v = v : xs
 
-pop :: [a] -> a
-pop (x:xs) = x
-pop [] = error "Stack underflow"
+pop :: JoyF
+pop (_:xs) = pure xs
+pop [] = Left InvalidState
 
 binOp :: (Integer -> Integer -> Integer) -> JoyF
 binOp op (JoyNumber y: JoyNumber x:xs) = pure $ JoyNumber (x `op` y) : xs
@@ -33,42 +33,6 @@ mult stack = binOp (*) stack
 sub :: JoyF
 sub stack = binOp (-) stack
 
--- Swap, dup and zap
-
--- | Swaps the first two elements on the stack.
--- [B] [A] swap == [A] [B]
-swap :: JoyF
-swap (x:y:xs) = pure $ y:x:xs
-swap _ = Left InvalidState
-
--- [A] dup  == [A] [A]
-dup :: JoyF
-dup (x:xs) = pure (x:x:xs)
-dup _ = Left InvalidState
-
--- [A] zap  ==
-zap :: JoyF
-zap (x:xs) = pure xs
-zap _ = Left InvalidState
-
--- Cat, cons and unit
-cons :: JoyF
-cons (JoyQuote qs : x : xs) = pure $ JoyQuote (x : qs) : xs
-cons _ = Left InvalidState
-
--- Cat takes two quotations and concatenates them together
-cat :: JoyF
-cat (JoyQuote xs : JoyQuote ys : tl) = pure $ JoyQuote (xs ++ ys) : tl
-cat _ = Left InvalidState
-
-first :: JoyF
-first (JoyQuote (x:xs) : ys) = pure $ x : JoyQuote xs : ys
-first _ = Left InvalidState
-
-unit :: JoyF
-unit (x:xs) = pure $ (JoyQuote [x]) : xs
-unit [] = pure $ (JoyQuote []) : []
-
 -----------------------------------------
 -- | Prelude env
 -----------------------------------------
@@ -77,13 +41,6 @@ prelude :: M.Map String JoyF
 prelude =
     M.fromList [ ("+", add)
                , ("*", mult)
-               , ("unit", unit)
-               , ("swap", swap)
-               , ("dup", dup)
-               , ("zap", zap)
-               , ("cons", cons)
-               , ("cat", cat)
-               , ("first", first)
                ]
 -----------------------------------------
 -- | Compiler
@@ -99,20 +56,54 @@ showError = error . show
 eval :: RuntimeStack -> ProgramStack -> M.Map String [Joy] -> [Joy]
 
 eval s [] env = reverse s
-eval stack (value@(JoyComment _) : xs) env = eval stack xs env
+-- Comments are skipped
+eval stack (value@(JoyComment _) : xs) env =
+    eval stack xs env
+-- Booleans are just pushed onto the stack
 eval stack (value@(JoyBool _) : xs) env =
     eval (value : stack) xs env
+-- Numbers are just pushed onto the stack
 eval stack (value@(JoyNumber _) : xs) env =
     eval (value : stack) xs env
+-- Quotations are just pushed onto the stack
 eval stack (value@(JoyQuote _) : xs) env =
     eval (value : stack) xs env
+-- Assignment alerts the programming environment
 eval stack (value@(JoyAssignment k f) : xs) env =
     eval stack xs (M.insert k f env)
+eval stack (value@(JoyLiteral "swap") : xs) env =
+    case stack of
+      (x:y:ys) -> eval (y:x:ys) xs env
+      _ -> showError $ InvalidState
+-- Base combinators : i, dip, cons, dup, zap
 -- The i combinator (takes a quoted program, applies it to the stack and then evals)
 eval stack (value@(JoyLiteral "i") : xs) env =
     case stack of
       (JoyQuote program) : ys -> eval ys (program ++ xs) env
-      _ -> error . show $ InvalidState
+      _ -> showError $ InvalidState
+-- Dip
+-- [B] [A] dip == A [B]
+-- The "dip" combinator executes the top item "A", but first it gets rid of the second item,
+-- which is restored after the execution of "A" is complete
+eval stack (value@(JoyLiteral "dip") : xs) env =
+    case stack of
+      ((JoyQuote p1) : p2 : rs) -> eval rs (p1 ++ [p2] ++ xs) env
+      _ -> showError $ InvalidState
+-- Cons
+eval stack (value@(JoyLiteral "cons") : xs) env =
+    case stack of
+      ((JoyQuote qs):x:xs) -> eval (JoyQuote (x : qs) : xs) xs env
+      _ -> showError $ InvalidState
+-- Dup
+eval stack (value@(JoyLiteral "dup") : xs) env =
+    case stack of
+       (y:ys) -> eval (y:y:ys) xs env
+       _ -> showError $ InvalidState
+-- Zap
+eval stack (value@(JoyLiteral "zap") : xs) env =
+    case stack of
+      (y:ys) -> eval ys xs env
+      _ -> showError $ InvalidState
 eval stack (value@(JoyLiteral l) : xs) env =
     case (M.lookup l prelude) of
       -- Try the native env first
@@ -134,3 +125,6 @@ runJoy input =
     case (parseJoy input) of
       Right program -> Right $ eval [] program M.empty
       Left e -> Left (show e)
+
+runJoyPretty :: String -> Either String String
+runJoyPretty input = pprint <$> runJoy input

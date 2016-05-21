@@ -7,10 +7,13 @@ module Language.Joy.Parser
        , parseLiteral
        , parseAssignment
        , testParser
+       , Pretty(..)
+       , pprint
        ) where
 
 import           Control.Applicative                ((<$>))
 import           Data.Char                          (isSpace)
+import qualified Data.List                          as L
 import           Text.ParserCombinators.Parsec
 import           Text.ParserCombinators.Parsec.Char (letter)
 
@@ -34,13 +37,18 @@ instance Pretty Joy where
     showJoy (JoyString x) = x
     showJoy (JoyQuote xs) =
         let innerForms = map showJoy xs
-            lBrace = ["["]
-            rBrace = ["]"]
+            lBrace = [" ["]
+            rBrace = ["] "]
        in
         mconcat . concat $ [lBrace, innerForms, rBrace]
     showJoy (JoyBool x) = show x
     showJoy (JoyAssignment k p) = k
     showJoy (JoyComment x) = ""
+
+-- Pretty print the stack
+pprint :: Pretty a => [a] -> String
+pprint xs = mconcat ["[", parts, "]"]
+    where parts = L.intercalate " " (map showJoy xs)
 
 -----------------------------------------
 -- | Parsers
