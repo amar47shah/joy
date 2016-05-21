@@ -49,7 +49,7 @@ much in the way of reference material on this language.
 ```
 
 
-```ps
+```pas
 PROCEDURE joy(node : memrange);
 VAR nod,temp1,temp2 : memrange;
 
