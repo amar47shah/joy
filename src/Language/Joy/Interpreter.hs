@@ -54,9 +54,9 @@ swap = do
     stack <- get
     case stack of
       (x:y:xs) -> do
-        put (y:x:xs)
-        return ()
-      _ -> liftIO . throw $ InvalidStateException "Expected two elements on the stack"
+         put (y:x:xs)
+         return ()
+       _ -> liftIO . throw $ InvalidStateException "Expected two elements on the stack"
 
 program = do
     push (JoyNumber 10)
