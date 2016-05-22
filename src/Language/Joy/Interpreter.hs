@@ -12,6 +12,7 @@ import           Language.Joy.Parser    (Joy (..), parseJoy)
 
 reservedCombinators :: [String]
 reservedCombinators = [ "swap"
+                      , "cons"
                       , "dup"
                       , "zap"
                       ]
@@ -145,38 +146,62 @@ zap = do
 
 -- i, dip, cons
 
+cons :: StateT Interpreter IO ()
+cons = do
+  (Interpreter stack env) <- get
+  case stack of
+    ((JoyQuote ys) : x : xs) -> do
+       put (Interpreter ((JoyQuote (x:ys)) : xs) env)
+       return ()
+    _ -> stateException "Invalid arguments"
+
+unit :: StateT Interpreter IO ()
+unit = do
+    (Interpreter stack env) <- get
+    case stack of
+      (x:xs) -> do
+          put (Interpreter ((JoyQuote [x]) : xs) env)
+          return ()
+      _ -> stateException "Empty stack"
+
+-- The I combinator is a partial one that breaks the patterns. I need to pass the
+-- runtime stack in to Interp to do this properly. Basically returns elements
+-- that get `re-added` to the runtime and THEN evaluated
+i :: StateT Interpreter IO [Joy]
+i = do
+    (Interpreter stack env) <- get
+    case stack of
+      ((JoyQuote q) : xs) -> do
+          put (Interpreter xs env)
+          return q
+      _ -> stateException "Invalid arguments"
+
 -------------------------------------------------
 -- Stateful evaluation
 -------------------------------------------------
 
 eval :: [Joy] -> StateT Interpreter IO ()
-eval [] = do
-    (Interpreter stack env) <- get
-    debug stack
-    return ()
-eval ((JoyNumber x) : xs) = push (JoyNumber x) >> eval xs
-eval ((JoyString x) : xs) = push (JoyString x) >> eval xs
+-- Inductive case
+eval [] = return ()
+--- Core types (mainly push operations)
+eval ((JoyNumber x) : xs)       = push (JoyNumber x) >> eval xs
+eval ((JoyString x) : xs)       = push (JoyString x) >> eval xs
 eval ((JoyAssignment k v) : xs) = setEnvState k v >> eval xs
-eval ((JoyQuote x) : xs) = push (JoyQuote x) >> eval xs
-eval ((JoyComment _) : xs) = eval xs
-eval ((JoyLiteral "dup") : xs) = dup >> eval xs
+eval ((JoyQuote x) : xs)        = push (JoyQuote x) >> eval xs
+eval ((JoyComment _) : xs)      = eval xs
+--- Combinators and native features
+eval ((JoyLiteral "dup") : xs)  = dup >> eval xs
+eval ((JoyLiteral "cons") : xs) = cons >> eval xs
 eval ((JoyLiteral "swap") : xs) = swap >> eval xs
-eval ((JoyLiteral "zap") : xs) = zap >> eval xs
-eval ((JoyLiteral "i") : xs) = do
-    (Interpreter stack env) <- get
-    case stack of
-      (JoyQuote program) : xs -> do
-        pop
-        (Interpreter stack env) <- get
-        debug stack
-        let ns = program ++ xs
-        debug ns
-        eval ns
-      _ -> stateException "Argument error"
-eval ((JoyLiteral ".") : xs) = dot >> eval xs
-eval ((JoyLiteral "+") : xs) = binOp (+) >> eval xs
-eval ((JoyLiteral "-") : xs) = binOp (-) >> eval xs
-eval ((JoyLiteral "*") : xs) = binOp (*) >> eval xs
+eval ((JoyLiteral "zap") : xs)  = zap >> eval xs
+eval ((JoyLiteral "unit") : xs) = unit >> eval xs
+eval ((JoyLiteral "i") : xs)    = do
+    r <- i
+    eval (r++xs)
+eval ((JoyLiteral ".") : xs)    = dot >> eval xs
+eval ((JoyLiteral "+") : xs)    = binOp (+) >> eval xs
+eval ((JoyLiteral "-") : xs)    = binOp (-) >> eval xs
+eval ((JoyLiteral "*") : xs)     = binOp (*) >> eval xs
 
 -------------------------------------------------
 
