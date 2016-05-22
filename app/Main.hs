@@ -1,19 +1,16 @@
 module Main where
 
-import           Language.Joy.Core as Joy
+import           Language.Joy.Interpreter as Interp
 
 runFile :: FilePath -> IO ()
 runFile f = do
     contents <- readFile f
-    let parsed = Joy.runJoy contents
-    print $ show parsed
+    Interp.run contents
 
 repl :: IO a
 repl = do
   input <- getLine
-  case (Joy.runJoy input) of
-    Right value -> print . show $ value
-    Left e -> print . show $ e
+  Interp.run input
   repl
 
 main :: IO ()

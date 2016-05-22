@@ -3,6 +3,8 @@ module Language.Joy.Interpreter
        , pop
        , push
        , peek
+       , exec
+       , run
        ) where
 
 import           Control.Exception.Base (Exception, throw)
@@ -23,6 +25,8 @@ reservedCombinators = [ "swap"
 
 data InterpeterException =
     InvalidStateException String
+    | ArgumentException String
+    | RuntimeException String
     deriving (Show)
 
 instance Exception InterpeterException
@@ -202,6 +206,7 @@ eval ((JoyLiteral ".") : xs)    = dot >> eval xs
 eval ((JoyLiteral "+") : xs)    = binOp (+) >> eval xs
 eval ((JoyLiteral "-") : xs)    = binOp (-) >> eval xs
 eval ((JoyLiteral "*") : xs)     = binOp (*) >> eval xs
+eval (x:xs) = liftIO . throw $ RuntimeException ("Failed to match " ++ (show x))
 
 -------------------------------------------------
 
