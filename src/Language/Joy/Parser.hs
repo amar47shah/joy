@@ -89,7 +89,7 @@ parseList =  do
 
 parseLiteral :: Parser Joy
 parseLiteral = do
-    x <- many1 (alphaNum <|> oneOf ['+', '-', '*'])
+    x <- many1 (alphaNum <|> oneOf ['+', '-', '*', '.', '\\', '>', '<', '='])
     return $ JoyLiteral x
 
 -- Assigment in Joy

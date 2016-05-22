@@ -8,7 +8,13 @@ module Language.Joy.Interpreter
 import           Control.Exception.Base (Exception, throw)
 import           Control.Monad.State
 import qualified Data.Map               as M
-import           Language.Joy.Parser    (Joy (..))
+import           Language.Joy.Parser    (Joy (..), parseJoy)
+
+reservedCombinators :: [String]
+reservedCombinators = [ "swap"
+                      , "dup"
+                      , "zap"
+                      ]
 
 -------------------------------------------------
 -- Errors
@@ -19,6 +25,9 @@ data InterpeterException =
     deriving (Show)
 
 instance Exception InterpeterException
+
+debug :: (Show r, MonadIO m) => r -> m ()
+debug x = let f = liftIO . print . show in f x
 
 stateException :: MonadIO m => String -> m a
 stateException msg = ioThrow (InvalidStateException msg)
@@ -78,29 +87,12 @@ peek :: StateT Interpreter IO (Maybe Joy)
 peek = do
     interp <- get
     case (stack interp) of
-      [] -> return Nothing
       (x:xs) -> return $ Just x
-
--- Swap the top two elements on the stack
-swap :: StateT Interpreter IO ()
-swap = do
-    (Interpreter stack env) <- get
-    case stack of
-      (x:y:xs) -> do
-         put (Interpreter (y:x:xs) env)
-         return ()
-      _ -> stateException "Expected two elements on the stack"
+      [] -> return Nothing
 
 -------------------------------------------------
 -- Native
 -------------------------------------------------
-
-dot :: StateT Interpreter IO ()
-dot = do
-    interp <- get
-    case (stack interp) of
-      (x:xs) -> let f = liftIO . print . show in f x
-      [] -> return ()
 
 -- Runs a binary operation on the stack
 binOp :: (Integer -> Integer -> Integer) -> StateT Interpreter IO ()
@@ -113,20 +105,74 @@ binOp op = do
           return ()
       _ -> stateException "Expected two numbers on the stack"
 
+-- Print the first element on the stack
+dot :: StateT Interpreter IO ()
+dot = do
+    interp <- get
+    case (stack interp) of
+      (x:xs) -> let f = liftIO . print . show in f x
+      [] -> return ()
+
+-- Swap the top two elements on the stack
+swap :: StateT Interpreter IO ()
+swap = do
+    (Interpreter stack env) <- get
+    case stack of
+      (x:y:xs) -> do
+         put (Interpreter (y:x:xs) env)
+         return ()
+      _ -> stateException "Expected two elements on the stack"
+
+-- Duplicate the top element on the stack
+dup :: StateT Interpreter IO ()
+dup = do
+    (Interpreter stack env) <- get
+    case stack of
+      (x:xs) -> put (Interpreter (x:x:xs) env) >> return ()
+      _ -> stateException "Empty stack"
+
+-- Pop the first element off the stack
+zap :: StateT Interpreter IO Joy
+zap = do
+    (Interpreter stack env) <- get
+    case stack of
+      (x:xs) -> put (Interpreter xs env) >> return x
+      _ -> stateException "Empty stack"
+
 -------------------------------------------------
 -- Combinators
 -------------------------------------------------
+
+-- i, dip, cons
 
 -------------------------------------------------
 -- Stateful evaluation
 -------------------------------------------------
 
 eval :: [Joy] -> StateT Interpreter IO ()
-eval [] = return ()
+eval [] = do
+    (Interpreter stack env) <- get
+    debug stack
+    return ()
 eval ((JoyNumber x) : xs) = push (JoyNumber x) >> eval xs
 eval ((JoyString x) : xs) = push (JoyString x) >> eval xs
 eval ((JoyAssignment k v) : xs) = setEnvState k v >> eval xs
+eval ((JoyQuote x) : xs) = push (JoyQuote x) >> eval xs
 eval ((JoyComment _) : xs) = eval xs
+eval ((JoyLiteral "dup") : xs) = dup >> eval xs
+eval ((JoyLiteral "swap") : xs) = swap >> eval xs
+eval ((JoyLiteral "zap") : xs) = zap >> eval xs
+eval ((JoyLiteral "i") : xs) = do
+    (Interpreter stack env) <- get
+    case stack of
+      (JoyQuote program) : xs -> do
+        pop
+        (Interpreter stack env) <- get
+        debug stack
+        let ns = program ++ xs
+        debug ns
+        eval ns
+      _ -> stateException "Argument error"
 eval ((JoyLiteral ".") : xs) = dot >> eval xs
 eval ((JoyLiteral "+") : xs) = binOp (+) >> eval xs
 eval ((JoyLiteral "-") : xs) = binOp (-) >> eval xs
@@ -134,9 +180,11 @@ eval ((JoyLiteral "*") : xs) = binOp (*) >> eval xs
 
 -------------------------------------------------
 
-eg = [JoyNumber 1, JoyNumber 2, JoyLiteral "+", JoyLiteral "."]
-
-eg2 = [JoyAssignment "square" [JoyLiteral "dup", JoyLiteral "*"], JoyLiteral "."]
-
 exec :: [Joy] -> IO ()
-exec program = runStateT (eval program >> checkEnv) (Interpreter [] M.empty) >> return ()
+exec program = runStateT (eval program) (Interpreter [] M.empty) >> return ()
+
+run :: String -> IO ()
+run program =
+    case (parseJoy program) of
+      Left e -> print "Failed to parse program"
+      Right p -> exec p
