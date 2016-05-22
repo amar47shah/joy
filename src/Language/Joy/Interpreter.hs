@@ -10,100 +10,133 @@ import           Control.Monad.State
 import qualified Data.Map               as M
 import           Language.Joy.Parser    (Joy (..))
 
+-------------------------------------------------
+-- Errors
+-------------------------------------------------
+
 data InterpeterException =
     InvalidStateException String
     deriving (Show)
 
 instance Exception InterpeterException
 
+stateException :: MonadIO m => String -> m a
+stateException msg = ioThrow (InvalidStateException msg)
+    where ioThrow = liftIO . throw
+
+-------------------------------------------------
+
 type Stack = [Joy]
 
 data Interpreter = Interpreter {
-    stack :: [Joy]                   -- The runtime stack (current program state)
-  , env   :: M.Map String [Joy]      -- The global environment defined by user
-} deriving ( Show )
+    -- Stack runtime state
+    stack :: Stack
+    -- Global environment that can be modified by user
+  , env   :: M.Map String [Joy]
+} deriving ( Eq, Show )
+
+setEnv :: String -> [Joy] -> Interpreter -> Interpreter
+setEnv k v (Interpreter stack env) = Interpreter stack newEnv
+    where newEnv = M.insert k v env
+
+getEnv :: String -> Interpreter -> Maybe [Joy]
+getEnv k (Interpreter stack env) = M.lookup k env
+
+setEnvState :: String -> [Joy] -> StateT Interpreter IO ()
+setEnvState k v = modify (setEnv k v) >> return ()
+
+-------------------------------------------------
+-- Debugging
+-------------------------------------------------
+
+checkEnv :: StateT Interpreter IO ()
+checkEnv = do
+    (Interpreter _ e) <- get
+    liftIO . print . show $ e
+    return ()
 
 -------------------------------------------------
 -- Core stack operations
 -------------------------------------------------
 
-pop ::  StateT Stack IO Joy
+pop ::  StateT Interpreter IO Joy
 pop = do
-    stack <- get
+    (Interpreter stack env) <- get
     case stack of
-      [] -> liftIO . throw  $ InvalidStateException "Empty stack"
+      [] -> stateException "Empty stack"
       (x:xs) -> do
-        put xs
+        put (Interpreter xs env)
         return x
 
-pop2 ::  StateT Stack IO (Joy, Joy)
-pop2 = do
-    stack <- get
-    case stack of
-      (x:y:xs) -> do
-          put xs
-          return (x,y)
-      _ -> liftIO . throw $ InvalidStateException "Expected two elements on stack"
-
-push :: Joy -> StateT Stack IO ()
+push :: Joy -> StateT Interpreter IO ()
 push v = do
-    stack <- get
-    put (v:stack)
-    return ()
+   (Interpreter stack env) <- get
+   put (Interpreter (v:stack) env)
+   return ()
 
-peek :: StateT Stack IO (Maybe Joy)
+peek :: StateT Interpreter IO (Maybe Joy)
 peek = do
-    stack <- get
-    case stack of
+    interp <- get
+    case (stack interp) of
       [] -> return Nothing
       (x:xs) -> return $ Just x
 
 -- Swap the top two elements on the stack
-swap :: StateT Stack IO ()
+swap :: StateT Interpreter IO ()
 swap = do
-    stack <- get
+    (Interpreter stack env) <- get
     case stack of
       (x:y:xs) -> do
-         put (y:x:xs)
+         put (Interpreter (y:x:xs) env)
          return ()
-       _ -> liftIO . throw $ InvalidStateException "Expected two elements on the stack"
+      _ -> stateException "Expected two elements on the stack"
 
 -------------------------------------------------
 -- Native
 -------------------------------------------------
 
-dot :: StateT Stack IO ()
+dot :: StateT Interpreter IO ()
 dot = do
-    stack <- get
-    case stack of
-      (x:xs) -> liftIO . print . show $ x
+    interp <- get
+    case (stack interp) of
+      (x:xs) -> let f = liftIO . print . show in f x
       [] -> return ()
 
 -- Runs a binary operation on the stack
-binOp :: (Integer -> Integer -> Integer) -> StateT Stack IO ()
+binOp :: (Integer -> Integer -> Integer) -> StateT Interpreter IO ()
 binOp op = do
-    stack <- get
+    (Interpreter stack env) <- get
     case stack of
       (JoyNumber x : JoyNumber y : xs) -> do
-          put (JoyNumber (x `op` y) : xs)
+          let ns = JoyNumber (x `op` y) : xs
+          put (Interpreter ns env)
           return ()
-      _ -> liftIO . throw $ InvalidStateException "Expected two numbers on the stack"
+      _ -> stateException "Expected two numbers on the stack"
 
+-------------------------------------------------
+-- Combinators
 -------------------------------------------------
 
 -------------------------------------------------
 -- Stateful evaluation
 -------------------------------------------------
 
-eval :: [Joy] -> StateT Stack IO ()
+eval :: [Joy] -> StateT Interpreter IO ()
 eval [] = return ()
-eval ((JoyNumber n) : xs) = push (JoyNumber n) >> eval xs
+eval ((JoyNumber x) : xs) = push (JoyNumber x) >> eval xs
+eval ((JoyString x) : xs) = push (JoyString x) >> eval xs
+eval ((JoyAssignment k v) : xs) = setEnvState k v >> eval xs
+eval ((JoyComment _) : xs) = eval xs
 eval ((JoyLiteral ".") : xs) = dot >> eval xs
 eval ((JoyLiteral "+") : xs) = binOp (+) >> eval xs
+eval ((JoyLiteral "-") : xs) = binOp (-) >> eval xs
+eval ((JoyLiteral "*") : xs) = binOp (*) >> eval xs
 
 -------------------------------------------------
 
 eg = [JoyNumber 1, JoyNumber 2, JoyLiteral "+", JoyLiteral "."]
 
+eg2 = [JoyAssignment "square" [JoyLiteral "dup", JoyLiteral "*"], JoyLiteral "."]
+
 exec :: [Joy] -> IO ()
-exec program = runStateT (eval program) [] >> return ()
+exec program = runStateT (eval program >> checkEnv) (Interpreter [] M.empty) >> return ()
