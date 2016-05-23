@@ -1,5 +1,5 @@
 -- |
--- Module      : Language.Joy.Interpreter
+-- Module      : Language.Joy.Parser
 -- Copyright   : (c) 2016 Owain Lewis
 --
 -- License     : BSD-style
