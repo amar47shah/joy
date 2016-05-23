@@ -115,7 +115,7 @@ dot :: StateT Interpreter IO ()
 dot = do
     interp <- get
     case (stack interp) of
-      (x:xs) -> let f = liftIO . print . show in f x
+      (x:xs) -> debug x
       [] -> return ()
 
 -- Swap the top two elements on the stack
