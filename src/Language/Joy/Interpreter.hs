@@ -59,6 +59,11 @@ getEnv k (Interpreter stack env) = M.lookup k env
 setEnvState :: String -> [Joy] -> StateT Interpreter IO ()
 setEnvState k v = modify (setEnv k v) >> return ()
 
+getEnvState :: String -> StateT Interpreter IO (Maybe [Joy])
+getEnvState k = do
+    (Interpreter stack env) <- get
+    return $ M.lookup k env
+
 -------------------------------------------------
 -- Debugging
 -------------------------------------------------
@@ -181,6 +186,8 @@ i = do
       _ -> stateException "Invalid arguments"
 
 -------------------------------------------------
+
+-------------------------------------------------
 -- Stateful evaluation
 -------------------------------------------------
 
@@ -206,6 +213,12 @@ eval ((JoyLiteral ".") : xs)    = dot >> eval xs
 eval ((JoyLiteral "+") : xs)    = binOp (+) >> eval xs
 eval ((JoyLiteral "-") : xs)    = binOp (-) >> eval xs
 eval ((JoyLiteral "*") : xs)     = binOp (*) >> eval xs
+-- Finally check the environment to see if a user has defined a literal
+eval ((JoyLiteral x) : xs) = do
+    (Interpreter stack env) <- get
+    case (M.lookup x env) of
+      Just joy -> eval (joy++xs)
+      Nothing -> liftIO . throw $ RuntimeException ("Unbound literal " ++ (show x))
 eval (x:xs) = liftIO . throw $ RuntimeException ("Failed to match " ++ (show x))
 
 -------------------------------------------------

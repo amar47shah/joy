@@ -1,3 +1,14 @@
+-- |
+-- Module      : Language.Joy.Interpreter
+-- Copyright   : (c) 2016 Owain Lewis
+--
+-- License     : BSD-style
+-- Maintainer  : owain@owainlewis.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- A Joy language parser
+--
 module Language.Joy.Parser
        ( Joy(..)
        , parseJoy
