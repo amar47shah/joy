@@ -2,15 +2,10 @@
 
 The Joy programming language
 
-## Combinators
-
-http://tunes.org/~iepos/joy.html
-
-http://www.complang.tuwien.ac.at/anton/euroforth/ef01/thun01.pdf
-https://github.com/nickelsworth/sympas/blob/master/text/18-minijoy.org
-
 This is my attempt at implementing and understanding the Joy programming language. It's hard to find
 much in the way of reference material on this language.
+
+## Combinators
 
 ```
                 [A] zap  ==
@@ -47,4 +42,11 @@ much in the way of reference material on this language.
     [D] [C] [B] [A] j    == [[C] [D] A] [B] A
 [E] [D] [C] [B] [A] j'   == [[D] A [E] B] [C] B
 ```
+
+## References
+
++ http://tunes.org/~iepos/joy.html
++ http://www.complang.tuwien.ac.at/anton/euroforth/ef01/thun01.pdf
++ https://github.com/nickelsworth/sympas/blob/master/text/18-minijoy.org
+
 
