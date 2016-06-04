@@ -111,6 +111,15 @@ peek = do
       (x:xs) -> return $ Just x
       [] -> return Nothing
 
+-- | Utility function to show an error if stack has invalid arity
+stackLevelArgumentException :: Int -> StateT Interpreter IO ()
+stackLevelArgumentException n = do
+    interp <- get
+    let len = length (stack interp)
+    if len == 2 then
+        return ()
+    else stateException $ mconcat ["Expected ", show n, " arguments on stack but found ", (show len)]
+
 -------------------------------------------------
 -- Native
 -------------------------------------------------
@@ -124,7 +133,7 @@ binOp op = do
           let ns = JoyNumber (x `op` y) : xs
           put (Interpreter ns env)
           return ()
-      _ -> stateException "Expected two numbers on the stack"
+      _ -> stackLevelArgumentException 2
 
 -- Print the first element on the stack
 dot :: StateT Interpreter IO ()
@@ -142,7 +151,7 @@ swap = do
       (x:y:xs) -> do
          put (Interpreter (y:x:xs) env)
          return ()
-      _ -> stateException "Expected two elements on the stack"
+      _ -> stackLevelArgumentException 2
 
 -- Duplicate the top element on the stack
 dup :: StateT Interpreter IO ()
@@ -150,7 +159,7 @@ dup = do
     (Interpreter stack env) <- get
     case stack of
       (x:xs) -> put (Interpreter (x:x:xs) env) >> return ()
-      _ -> stateException "Empty stack"
+      _ -> stackLevelArgumentException 1
 
 -- Pop the first element off the stack
 zap :: StateT Interpreter IO Joy
