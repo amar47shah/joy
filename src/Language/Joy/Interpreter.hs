@@ -30,14 +30,10 @@ reservedCombinators = [ "swap"
                       , "zap"
                       ]
 
--------------------------------------------------
--- Errors
--------------------------------------------------
-
 data InterpeterException =
     InvalidStateException String
-    | ArgumentException String
-    | RuntimeException String
+  | ArgumentException String
+  | RuntimeException String
     deriving (Show)
 
 instance Exception InterpeterException
