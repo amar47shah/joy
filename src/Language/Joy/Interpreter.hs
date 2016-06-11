@@ -49,8 +49,6 @@ stateException :: MonadIO m => String -> m a
 stateException msg = ioThrow (InvalidStateException msg)
     where ioThrow = liftIO . throw
 
--------------------------------------------------
-
 type Stack = [Joy]
 
 data Interpreter = Interpreter {
@@ -75,19 +73,11 @@ getEnvState k = do
     (Interpreter stack env) <- get
     return $ M.lookup k env
 
--------------------------------------------------
--- Debugging
--------------------------------------------------
-
 checkEnv :: StateT Interpreter IO ()
 checkEnv = do
     (Interpreter _ e) <- get
     liftIO . print . show $ e
     return ()
-
--------------------------------------------------
--- Core stack operations
--------------------------------------------------
 
 pop ::  StateT Interpreter IO Joy
 pop = do
@@ -120,11 +110,7 @@ stackLevelArgumentException n = do
         return ()
     else stateException $ mconcat ["Expected ", show n, " arguments on stack but found ", (show len)]
 
--------------------------------------------------
--- Native
--------------------------------------------------
-
--- Runs a binary operation on the stack
+-- | Runs a binary operation on the stack
 binOp :: (Integer -> Integer -> Integer) -> StateT Interpreter IO ()
 binOp op = do
     (Interpreter stack env) <- get
@@ -135,7 +121,8 @@ binOp op = do
           return ()
       _ -> stackLevelArgumentException 2
 
--- Print the first element on the stack
+-- | Print the first element on the stack
+--
 dot :: StateT Interpreter IO ()
 dot = do
     interp <- get
@@ -143,7 +130,8 @@ dot = do
       (x:xs) -> debug x
       [] -> return ()
 
--- Swap the top two elements on the stack
+-- | Swap the top two elements on the stack
+--
 swap :: StateT Interpreter IO ()
 swap = do
     (Interpreter stack env) <- get
@@ -153,7 +141,8 @@ swap = do
          return ()
       _ -> stackLevelArgumentException 2
 
--- Duplicate the top element on the stack
+-- | Duplicate the top element on the stack
+--
 dup :: StateT Interpreter IO ()
 dup = do
     (Interpreter stack env) <- get
@@ -161,7 +150,8 @@ dup = do
       (x:xs) -> put (Interpreter (x:x:xs) env) >> return ()
       _ -> stackLevelArgumentException 1
 
--- Pop the first element off the stack
+-- | Pop the first element off the stack
+--
 zap :: StateT Interpreter IO Joy
 zap = do
     (Interpreter stack env) <- get
@@ -172,8 +162,6 @@ zap = do
 -------------------------------------------------
 -- Combinators
 -------------------------------------------------
-
--- i, dip, cons
 
 cons :: StateT Interpreter IO ()
 cons = do
@@ -193,9 +181,6 @@ unit = do
           return ()
       _ -> stateException "Empty stack"
 
--- The I combinator is a partial one that breaks the patterns. I need to pass the
--- runtime stack in to Interp to do this properly. Basically returns elements
--- that get `re-added` to the runtime and THEN evaluated
 i :: StateT Interpreter IO [Joy]
 i = do
     (Interpreter stack env) <- get
@@ -204,12 +189,6 @@ i = do
           put (Interpreter xs env)
           return q
       _ -> stateException "Invalid arguments"
-
--------------------------------------------------
-
--------------------------------------------------
--- Stateful evaluation
--------------------------------------------------
 
 eval :: [Joy] -> StateT Interpreter IO ()
 -- Inductive case
@@ -241,11 +220,10 @@ eval ((JoyLiteral x) : xs) = do
       Nothing -> liftIO . throw $ RuntimeException ("Unbound literal " ++ (show x))
 eval (x:xs) = liftIO . throw $ RuntimeException ("Failed to match " ++ (show x))
 
--------------------------------------------------
-
 exec :: [Joy] -> IO ()
 exec program = runStateT (eval program) (Interpreter [] M.empty) >> return ()
 
+-- | Run a JOY program
 run :: String -> IO ()
 run program =
     case (parseJoy program) of
