@@ -155,10 +155,6 @@ zap = do
       (x:xs) -> put (Interpreter xs env) >> return x
       _ -> stateException "Empty stack"
 
--------------------------------------------------
--- Combinators
--------------------------------------------------
-
 cons :: StateT Interpreter IO ()
 cons = do
   (Interpreter stack env) <- get
