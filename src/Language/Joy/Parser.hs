@@ -114,8 +114,6 @@ parseAssignment = do
     spaces *> char ';'
     return $ JoyAssignment var expr
 
------------------------------------------
-
 parseExpr :: Parser Joy
 parseExpr = (try parseAssignment)
         <|> parseList
