@@ -40,5 +40,3 @@ initialState program =
 -- Modify state by adding a value to the environment
 insertEnv :: State -> String -> [Joy] -> State
 insertEnv state k v = over env (M.insert k v) state
-
-
