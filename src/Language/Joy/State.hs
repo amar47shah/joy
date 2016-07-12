@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell,
-             RankNTypes #-}
+{-# LANGUAGE RankNTypes      #-}
+{-# LANGUAGE TemplateHaskell #-}
 -- |
 -- Module      : Language.Joy.Interpreter
 -- Copyright   : (c) 2016 Owain Lewis
@@ -13,9 +13,9 @@
 --
 module Language.Joy.State where
 
-import Language.Joy.AST
-import qualified Data.Map               as M
-import Control.Lens (makeLenses, over, view)
+import           Control.Lens     (makeLenses, over, view)
+import qualified Data.Map         as M
+import           Language.Joy.AST
 
 type Env = M.Map String [Joy]
 
@@ -40,3 +40,6 @@ initialState program =
 -- Modify state by adding a value to the environment
 insertEnv :: State -> String -> [Joy] -> State
 insertEnv state k v = over env (M.insert k v) state
+
+pushStack :: Joy -> State -> State
+pushStack v = over output (\xs -> v : xs)

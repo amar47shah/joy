@@ -1,6 +1,6 @@
 module Language.Joy.AST where
 
-import qualified Data.List                          as L
+import qualified Data.List as L
 
 type JoyProgram = [Joy]
 
