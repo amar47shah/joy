@@ -15,51 +15,15 @@ module Language.Joy.Parser
        , parseNumber
        , parseString
        , parseComment
-       , parseLiteral
+       , parseSymbol
        , parseAssignment
-       , testParser
-       , Pretty(..)
-       , pprint
        ) where
 
 import           Control.Applicative                ((<$>))
 import           Data.Char                          (isSpace)
-import qualified Data.List                          as L
 import           Text.ParserCombinators.Parsec
 import           Text.ParserCombinators.Parsec.Char (letter)
-
-type JoyProgram = [Joy]
-
-data Joy = JoyNumber Integer
-         | JoyLiteral String
-         | JoyString String
-         | JoyQuote [Joy]
-         | JoyBool Bool
-         | JoyAssignment String JoyProgram
-         | JoyComment String
-           deriving ( Show, Eq )
-
-class Pretty a where
-    showJoy :: a -> String
-
-instance Pretty Joy where
-    showJoy (JoyNumber x) = show x
-    showJoy (JoyLiteral x) = x
-    showJoy (JoyString x) = x
-    showJoy (JoyQuote xs) =
-        let innerForms = map showJoy xs
-            lBrace = [" ["]
-            rBrace = ["] "]
-       in
-        mconcat . concat $ [lBrace, innerForms, rBrace]
-    showJoy (JoyBool x) = show x
-    showJoy (JoyAssignment k p) = k
-    showJoy (JoyComment x) = ""
-
--- Pretty print the stack
-pprint :: Pretty a => [a] -> String
-pprint xs = mconcat ["[", parts, "]"]
-    where parts = L.intercalate " " (map showJoy xs)
+import           Language.Joy.AST
 
 -----------------------------------------
 -- | Parsers
@@ -98,18 +62,24 @@ parseList =  do
     _ <- char ']'
     return $ JoyQuote x
 
-parseLiteral :: Parser Joy
-parseLiteral = do
+parseSymbol :: Parser Joy
+parseSymbol = do
     x <- many1 (alphaNum <|> oneOf ['+', '-', '*', '.', '\\', '>', '<', '='])
-    return $ JoyLiteral x
+    return $ JoySymbol x
 
 -- Assigment in Joy
--- fac  == [null] [succ] [dup pred] [*] linrec
+--
+-- @@
+-- let fac ==
+--   [null] [succ] [dup pred] [*] linrec
+-- ;
+-- @@
+--
 parseAssignment :: Parser Joy
 parseAssignment = do
     string "let"
     var <- whiteSpace $ many1 alphaNum
-    string "="
+    lexi $ string "=="
     expr <- many1 (whiteSpace parseExpr)
     spaces *> char ';'
     return $ JoyAssignment var expr
@@ -119,7 +89,7 @@ parseExpr = (try parseAssignment)
         <|> parseList
         <|> parseNumber
         <|> parseString
-        <|> parseLiteral
+        <|> parseSymbol
         <|> parseComment
 
 testParser :: (Parser a) -> String -> Either ParseError a
