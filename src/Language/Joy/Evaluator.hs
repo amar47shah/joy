@@ -11,7 +11,7 @@
 --
 module Language.Joy.Evaluator
     ( run
-    )where
+    ) where
 
 import Language.Joy.AST
 import Language.Joy.State
@@ -25,6 +25,3 @@ run state@(State (i@(JoyNumber _):xs) output env) = returnState xs (i:output) en
 run state@(State (i@(JoyString _):xs) output env) = returnState xs (i:output) env
 run state@(State (i@(JoyBool _):xs) output env) = returnState xs (i:output) env
 run state@(State (i@(JoyQuote _):xs) output env) = returnState xs (i:output) env
-
-
-
