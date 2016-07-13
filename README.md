@@ -5,6 +5,17 @@ The Joy programming language
 This is my attempt at implementing and understanding the Joy programming language. It's hard to find
 much in the way of reference material on this language.
 
+```haskell
+λ> let s = initialState [JoyNumber 10, JoyNumber 20, JoyNumber 30]
+λ> runRecursive (pure s) 0
+
+"Running step 0 State {_input = [JoyNumber 10,JoyNumber 20,JoyNumber 30], _output = [], _env = fromList []}"
+"Running step 1 State {_input = [JoyNumber 20,JoyNumber 30], _output = [JoyNumber 10], _env = fromList []}"
+"Running step 2 State {_input = [JoyNumber 30], _output = [JoyNumber 20,JoyNumber 10], _env = fromList []}"
+Right (State {_input = [], _output = [JoyNumber 30,JoyNumber 20,JoyNumber 10], _env = fromList []})
+
+```
+
 ## Combinators
 
 ```

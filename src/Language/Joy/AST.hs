@@ -21,6 +21,7 @@ import qualified Data.List as L
 type JoyProgram = [Joy]
 
 data JoyError = InvalidState String
+    deriving ( Eq, Show )
 
 data Joy = JoyNumber Integer
          | JoySymbol String
@@ -29,7 +30,7 @@ data Joy = JoyNumber Integer
          | JoyBool Bool
          | JoyAssignment String JoyProgram
          | JoyComment String
-           deriving ( Show, Eq )
+           deriving ( Eq, Show )
 
 class Pretty a where
     showJoy :: a -> String
