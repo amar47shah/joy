@@ -40,10 +40,10 @@ debug x = x >>= print . show
 
 -- | Recursively evaluate the input program but stop if we hit an error
 --
--- @@
+-- @
 -- λ> let s = initialState [JoyNumber 10, JoyNumber 20, JoyNumber 30]
 -- λ> runRecursive (pure s) 0
--- @@
+-- @
 --
 runRecursive :: IO State -> Int -> IO (Either JoyError State)
 runRecursive state step = do
@@ -58,4 +58,3 @@ runRecursive state step = do
           do
             runRecursive (pure newState) (step+1)
       Left e -> return . Left $ e
-
