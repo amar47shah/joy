@@ -12,8 +12,7 @@
 module Language.Joy.Std
     ( dot
     , dup
-    )
-    where
+    ) where
 
 import Language.Joy.AST
 import Language.Joy.State
