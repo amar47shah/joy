@@ -12,12 +12,15 @@
 module Language.Joy.AST
     ( Joy(..)
     , JoyProgram
+    , JoyError(..)
     , pprint
     ) where
 
 import qualified Data.List as L
 
 type JoyProgram = [Joy]
+
+data JoyError = InvalidState String
 
 data Joy = JoyNumber Integer
          | JoySymbol String

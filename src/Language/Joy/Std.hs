@@ -17,8 +17,6 @@ module Language.Joy.Std
 import Language.Joy.AST
 import Language.Joy.State
 
-data JoyError = InvalidState String
-
 type JoyResult = IO (Either JoyError State)
 
 failWith :: Monad m => a -> m (Either a b)
