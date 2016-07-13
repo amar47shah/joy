@@ -192,20 +192,20 @@ eval ((JoyAssignment k v) : xs) = setEnvState k v >> eval xs
 eval ((JoyQuote x) : xs)        = push (JoyQuote x) >> eval xs
 eval ((JoyComment _) : xs)      = eval xs
 --- Combinators and native features
-eval ((JoyLiteral "dup") : xs)  = dup >> eval xs
-eval ((JoyLiteral "cons") : xs) = cons >> eval xs
-eval ((JoyLiteral "swap") : xs) = swap >> eval xs
-eval ((JoyLiteral "zap") : xs)  = zap >> eval xs
-eval ((JoyLiteral "unit") : xs) = unit >> eval xs
-eval ((JoyLiteral "i") : xs)    = do
+eval ((JoySymbol "dup") : xs)  = dup >> eval xs
+eval ((JoySymbol "cons") : xs) = cons >> eval xs
+eval ((JoySymbol "swap") : xs) = swap >> eval xs
+eval ((JoySymbol "zap") : xs)  = zap >> eval xs
+eval ((JoySymbol "unit") : xs) = unit >> eval xs
+eval ((JoySymbol "i") : xs)    = do
     r <- i
     eval (r++xs)
-eval ((JoyLiteral ".") : xs)    = dot >> eval xs
-eval ((JoyLiteral "+") : xs)    = binOp (+) >> eval xs
-eval ((JoyLiteral "-") : xs)    = binOp (-) >> eval xs
-eval ((JoyLiteral "*") : xs)     = binOp (*) >> eval xs
+eval ((JoySymbol ".") : xs)    = dot >> eval xs
+eval ((JoySymbol "+") : xs)    = binOp (+) >> eval xs
+eval ((JoySymbol "-") : xs)    = binOp (-) >> eval xs
+eval ((JoySymbol "*") : xs)     = binOp (*) >> eval xs
 -- Finally check the environment to see if a user has defined a literal
-eval ((JoyLiteral x) : xs) = do
+eval ((JoySymbol x) : xs) = do
     (Interpreter stack env) <- get
     case (M.lookup x env) of
       Just joy -> eval (joy++xs)

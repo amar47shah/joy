@@ -9,7 +9,7 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- A Joy language interpreter
+-- This module contains a definition of the Joy program runtime state
 --
 module Language.Joy.State where
 

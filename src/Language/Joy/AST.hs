@@ -1,4 +1,19 @@
-module Language.Joy.AST where
+-- |
+-- Module      : Language.Joy.Parser
+-- Copyright   : (c) 2016 Owain Lewis
+--
+-- License     : BSD-style
+-- Maintainer  : owain@owainlewis.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- The primary AST for Joy
+--
+module Language.Joy.AST
+    ( Joy(..)
+    , JoyProgram
+    , pprint
+    ) where
 
 import qualified Data.List as L
 
