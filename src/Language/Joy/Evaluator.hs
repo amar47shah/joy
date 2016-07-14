@@ -14,9 +14,9 @@ module Language.Joy.Evaluator
     , runRecursive
     ) where
 
-import Language.Joy.AST
-import Language.Joy.State
-import Data.Monoid((<>))
+import           Data.Monoid        ((<>))
+import           Language.Joy.AST
+import           Language.Joy.State
 
 returnState :: Applicative f => [Joy] -> [Joy] -> Env -> f (Either a State)
 returnState i o e = pure . Right $ State i o e
@@ -24,16 +24,24 @@ returnState i o e = pure . Right $ State i o e
 -- | Run some state exactly once
 --
 run :: State -> IO (Either JoyError State)
+-- Terminal clause. There is no more input to process
 run state@(State [] _ _) =
     pure . pure $ state
+-- Push onto output stack
 run state@(State (i@(JoyNumber _):xs) output env) =
     returnState xs (i:output) env
+-- Push onto output stack
 run state@(State (i@(JoyString _):xs) output env) =
     returnState xs (i:output) env
+-- Push onto output stack
 run state@(State (i@(JoyBool _):xs) output env) =
     returnState xs (i:output) env
+-- Push onto output stack
 run state@(State (i@(JoyQuote _):xs) output env) =
     returnState xs (i:output) env
+-- Lookup symbol for native match else search user env and apply all values to stack
+run state@(State (i@(JoySymbol sym):xs) output env) = error "TODO"
+run state@(State input output env) = return $ Left (RuntimeError "Unsupported terminal clause")
 
 debug :: Show a => IO a -> IO ()
 debug x = x >>= print . show
@@ -55,6 +63,6 @@ runRecursive state step = do
         if (null input) then
           return . Right $ newState
         else
-          do
-            runRecursive (pure newState) (step+1)
+            do
+              runRecursive (pure newState) (step+1)
       Left e -> return . Left $ e

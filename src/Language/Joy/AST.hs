@@ -21,6 +21,7 @@ import qualified Data.List as L
 type JoyProgram = [Joy]
 
 data JoyError = InvalidState String
+              | RuntimeError String
     deriving ( Eq, Show )
 
 data Joy = JoyNumber Integer
