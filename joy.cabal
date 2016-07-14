@@ -15,7 +15,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Language.Joy.Core, Language.Joy.Parser
+  exposed-modules:     Language.Joy.Evaluator,
+                       Language.Joy.AST,
+                       Language.Joy.Parser,
+                       Language.Joy.State,
+                       Language.Joy.Std
   build-depends:       base >= 4.7 && < 5, containers, parsec, mtl, lens
   default-language:    Haskell2010
 

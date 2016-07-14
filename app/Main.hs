@@ -1,17 +1,13 @@
-module Main where
+module Main ( main ) where
 
-import           Language.Joy.Interpreter as Interp
+import           Language.Joy.Evaluator
+import           Language.Joy.Parser
+import           Language.Joy.State
 
-runFile :: FilePath -> IO ()
-runFile f = do
-    contents <- readFile f
-    Interp.run contents
+readProgram = do
+    contents <- readFile "programs/simple.joy"
+    case parseJoy contents of
+      Left e -> return ()
+      Right p -> return ()
 
-repl :: IO a
-repl = do
-  input <- getLine
-  Interp.run input
-  repl
-
-main :: IO ()
 main = print "OK"

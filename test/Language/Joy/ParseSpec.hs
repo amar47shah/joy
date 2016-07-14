@@ -1,6 +1,6 @@
 module Language.Joy.ParseSpec where
 
-import           Language.Joy.Parser as P
+import           Language.Joy.Parser
 import           Test.Hspec
 
 main :: IO ()
@@ -10,24 +10,24 @@ spec :: Spec
 spec = do
     describe "parsing numbers" $ do
         it "correctly parses valid input" $ do
-            (P.testParser parseNumber "1") `shouldBe` (Right (JoyNumber 1))
+            (parseJoy "1 2 3") `shouldBe` (Right [JoyNumber 1, JoyNumber 2, JoyNumber 3])
 
-    describe "parsing literals" $ do
+    describe "parsing symbols" $ do
         it "correctly parses valid input" $ do
-            (P.testParser parseLiteral "dup") `shouldBe` (Right (JoyLiteral "dup"))
-            (P.testParser parseLiteral "+") `shouldBe` (Right (JoyLiteral "+"))
+            (parseJoy "dup") `shouldBe` (Right [JoySymbol "dup"])
+            (parseJoy "+") `shouldBe` (Right [JoySymbol "+"])
 
     describe "parsing strings" $ do
         it "correctly parses valid input" $ do
-            (P.testParser parseString "\"HELLO\"") `shouldBe` (Right (JoyString "HELLO"))
+            (parseJoy "\"HELLO\"") `shouldBe` (Right $ [JoyString "HELLO"])
 
     describe "parsing comments" $ do
         it "correctly parses valid input" $ do
-            let expected = JoyComment "Hello, World!"
-            (P.testParser parseComment "(* Hello, World! *)") `shouldBe` (Right expected)
+            let expected = [JoyComment "Hello, World!"]
+            (parseJoy "(* Hello, World! *)") `shouldBe` (Right expected)
 
     describe "parsing assignment" $ do
         it "correctly parses valid input" $ do
-            let input = "square == dup *"
-                expected = (JoyAssignment "square" [JoyLiteral "dup",JoyLiteral "*"])
-            (P.testParser P.parseAssignment input) `shouldBe` (Right expected)
+            let input = "let square == dup *;"
+                expected = [JoyAssignment "square" [JoySymbol "dup",JoySymbol "*"]]
+            (parseJoy input) `shouldBe` (Right expected)
