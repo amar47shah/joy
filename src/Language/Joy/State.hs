@@ -34,8 +34,7 @@ data State = State {
 makeLenses ''State
 
 liftState :: [Joy] -> State
-liftState program =
-    State { _input = program, _output = [], _env = M.empty }
+liftState program = State { _input = program, _output = [], _env = M.empty }
 
 -- Modify state by adding a value to the environment
 insertEnv :: State -> String -> [Joy] -> State
