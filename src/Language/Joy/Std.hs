@@ -28,10 +28,12 @@ succeedWith = pure . Right
 dup :: State -> JoyResult
 dup (State input (x:xs) env) = 
     succeedWith updatedState
-        where updatedState = State input (x:x:xs) env
+        where updatedState = 
+            State input (x:x:xs) env
 dup _ = 
     failWith invalidState
-        where invalidState = InvalidState "Invalid state for operation dup"
+        where invalidState = 
+            InvalidState "Invalid state for operation dup"
 
 dot :: State -> JoyResult
 dot s = do
