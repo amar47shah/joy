@@ -26,8 +26,12 @@ succeedWith :: b -> IO (Either a b)
 succeedWith = pure . Right
 
 dup :: State -> JoyResult
-dup (State input (x:xs) env) = succeedWith (State input (x:x:xs) env)
-dup _ = failWith (InvalidState "Invalid state for operation dup")
+dup (State input (x:xs) env) = 
+    succeedWith updatedState
+        where updatedState = State input (x:x:xs) env
+dup _ = 
+    failWith invalidState
+        where invalidState = InvalidState "Invalid state for operation dup"
 
 dot :: State -> JoyResult
 dot s = do
