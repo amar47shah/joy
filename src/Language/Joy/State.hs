@@ -40,5 +40,8 @@ liftState program = State { _input = program, _output = [], _env = M.empty }
 insertEnv :: State -> String -> [Joy] -> State
 insertEnv state k v = over env (M.insert k v) state
 
+getEnv :: String -> State -> Maybe [Joy]
+getEnv k state = M.lookup k (_env state)
+
 pushStack :: Joy -> State -> State
 pushStack v = over output (\xs -> v : xs)

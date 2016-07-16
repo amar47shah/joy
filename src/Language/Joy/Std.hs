@@ -10,12 +10,23 @@
 -- Standard library for Joy including all primary combinators
 --
 module Language.Joy.Std
-    ( dot
+    ( allOperations
+    , findOperation
+    , dot
     , dup
     ) where
 
 import Language.Joy.AST
 import Language.Joy.State
+import Data.Map as M
+
+allOperations :: Map [Char] (State -> JoyResult)
+allOperations = fromList[ ("dup", dup)
+                        , (".", dot)
+                        ]
+
+findOperation :: String -> Maybe (State -> JoyResult)
+findOperation k = M.lookup k allOperations
 
 type JoyResult = IO (Either JoyError State)
 
@@ -25,17 +36,15 @@ failWith = pure . Left
 succeedWith :: b -> IO (Either a b)
 succeedWith = pure . Right
 
+-- | Is there a more elegant way to bind these and prevent terminal recursion?
+
 dup :: State -> JoyResult
-dup (State input (x:xs) env) = 
-    succeedWith updatedState
-        where updatedState = 
-            State input (x:x:xs) env
-dup _ = 
-    failWith invalidState
-        where invalidState = 
-            InvalidState "Invalid state for operation dup"
+dup (State (JoySymbol("dup"):ys) (x:xs) env) = succeedWith updatedState
+    where updatedState = State ys (x:x:xs) env
+dup _ = failWith $ InvalidState "Invalid state for operation dup"
 
 dot :: State -> JoyResult
-dot s = do
-  putStrLn (show s)
-  return (pure s)
+dot state@(State (JoySymbol("."):ys) output env) = do
+  putStrLn (show state)
+  return . pure $ State ys output env
+dot _ = failWith $ InvalidState "Invalid state for operation dup"

@@ -17,6 +17,7 @@ module Language.Joy.Evaluator
 import           Data.Monoid        ((<>))
 import           Language.Joy.AST
 import           Language.Joy.State
+import           Language.Joy.Std   (findOperation)
 
 returnState :: Applicative f => [Joy] -> [Joy] -> Env -> f (Either a State)
 returnState i o e = pure . Right $ State i o e
@@ -26,7 +27,7 @@ returnState i o e = pure . Right $ State i o e
 run :: State -> IO (Either JoyError State)
 -- Terminal clause. There is no more input to process
 run state@(State [] _ _) =
-    pure . pure $ state
+    return . pure $ state
 -- Push onto output stack
 run state@(State (i@(JoyNumber _):xs) output env) =
     returnState xs (i:output) env
@@ -40,7 +41,15 @@ run state@(State (i@(JoyBool _):xs) output env) =
 run state@(State (i@(JoyQuote _):xs) output env) =
     returnState xs (i:output) env
 -- Lookup symbol for native match else search user env and apply all values to stack
-run state@(State (i@(JoySymbol sym):xs) output env) = error "TODO"
+run state@(State (i@(JoySymbol sym):xs) output env) =
+    case (findOperation sym) of
+        Just f -> f state
+        Nothing ->
+          case (getEnv sym state) of
+              -- Push all operations back onto the stack and then evaluate
+              Just ops -> return . Right $ State (ops ++ xs) output env
+              -- A symbol was passed that doesn't exist as a native operation or a user defined function
+              Nothing -> return . Left $ RuntimeError "Unbound symbol"
 run state@(State input output env) = return $ Left (RuntimeError "Unsupported terminal clause")
 
 debug :: Show a => IO a -> IO ()
@@ -56,7 +65,7 @@ debug x = x >>= print . show
 runRecursive :: IO State -> Int -> IO (Either JoyError State)
 runRecursive state step = do
     innerState <- state
-    print $ "Running step " <> (show step) <> " " <> show innerState
+    -- print $ "Running step " <> (show step) <> " " <> show innerState
     result <- run innerState
     case result of
       Right (newState@(State input output env)) ->
