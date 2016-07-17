@@ -19,9 +19,12 @@ module Language.Joy.Std
 import Language.Joy.AST
 import Language.Joy.State
 import Data.Map as M
+import Data.Monoid((<>))
 
 allOperations :: Map [Char] (State -> JoyResult)
 allOperations = fromList[ ("dup", dup)
+                        , ("+", plus)
+                        , ("i", i)
                         , (".", dot)
                         ]
 
@@ -36,15 +39,27 @@ failWith = pure . Left
 succeedWith :: b -> IO (Either a b)
 succeedWith = pure . Right
 
+failFor :: Monad m => String -> m (Either JoyError b)
+failFor op = failWith $ InvalidState ("Invalid state for operation " <> op)
+
 -- | Is there a more elegant way to bind these and prevent terminal recursion?
 
+plus :: State -> JoyResult
+plus (State (JoySymbol("+"):ys) ((JoyNumber x):(JoyNumber y):xs) env) =
+    succeedWith $ State ys (JoyNumber(x+y):xs) env
+plus _ = failFor "+"
+
 dup :: State -> JoyResult
-dup (State (JoySymbol("dup"):ys) (x:xs) env) = succeedWith updatedState
-    where updatedState = State ys (x:x:xs) env
-dup _ = failWith $ InvalidState "Invalid state for operation dup"
+dup (State (JoySymbol("dup"):ys) (x:xs) env) = succeedWith $ State ys (x:x:xs) env
+dup _ = failFor "dup"
 
 dot :: State -> JoyResult
 dot state@(State (JoySymbol("."):ys) output env) = do
-  putStrLn (show state)
-  return . pure $ State ys output env
-dot _ = failWith $ InvalidState "Invalid state for operation dup"
+    print (show state)
+    return . pure $ State ys output env
+dot _ = failFor "."
+
+-- | Put all values inside the quoted list onto the stack
+i :: State -> JoyResult
+i state@(State (JoySymbol("i"):ys) (JoyQuote vs:xs) env) = succeedWith $ State (vs++ys) xs env
+i _ = failFor "i"

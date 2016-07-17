@@ -23,7 +23,6 @@ returnState :: Applicative f => [Joy] -> [Joy] -> Env -> f (Either a State)
 returnState i o e = pure . Right $ State i o e
 
 -- | Run some state exactly once
---
 run :: State -> IO (Either JoyError State)
 -- Terminal clause. There is no more input to process
 run state@(State [] _ _) =
@@ -49,19 +48,18 @@ run state@(State (i@(JoySymbol sym):xs) output env) =
               -- Push all operations back onto the stack and then evaluate
               Just ops -> return . Right $ State (ops ++ xs) output env
               -- A symbol was passed that doesn't exist as a native operation or a user defined function
-              Nothing -> return . Left $ RuntimeError "Unbound symbol"
+              Nothing -> return . Left $ RuntimeError ("Unbound symbol " ++ sym)
 run state@(State input output env) = return $ Left (RuntimeError "Unsupported terminal clause")
 
 debug :: Show a => IO a -> IO ()
 debug x = x >>= print . show
 
 -- | Recursively evaluate the input program but stop if we hit an error
---
--- @
--- λ> let s = initialState [JoyNumber 10, JoyNumber 20, JoyNumber 30]
--- λ> runRecursive (pure s) 0
--- @
---
+-- |
+-- | @
+-- | λ> let s = initialState [JoyNumber 10, JoyNumber 20, JoyNumber 30]
+-- | λ> runRecursive (pure s) 0
+-- | @
 runRecursive :: IO State -> Int -> IO (Either JoyError State)
 runRecursive state step = do
     innerState <- state

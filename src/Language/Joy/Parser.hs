@@ -67,14 +67,14 @@ parseSymbol = do
     x <- many1 (alphaNum <|> oneOf ['+', '-', '*', '.', '\\', '>', '<', '='])
     return $ JoySymbol x
 
--- Assigment in Joy
---
--- @@
--- let fac ==
---   [null] [succ] [dup pred] [*] linrec
--- ;
--- @@
---
+-- | Assigment in Joy
+-- |
+-- | @@
+-- | let fac ==
+-- |   [null] [succ] [dup pred] [*] linrec
+-- | ;
+-- | @@
+-- |
 parseAssignment :: Parser Joy
 parseAssignment = do
     string "let"
