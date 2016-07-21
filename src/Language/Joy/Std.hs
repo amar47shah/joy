@@ -21,15 +21,27 @@ import Language.Joy.State
 import Data.Map as M
 import Data.Monoid((<>))
 
+combinators :: Map String (State -> JoyResult)
+combinators = fromList [ ("i", i)
+                       , ("swap", swap)
+                       , ("dup", dup)
+                       ]
+
+io :: Map String (State -> JoyResult)
+io = fromList [ (".", dot) ]
+
+math :: Map String (State -> JoyResult)
+math = fromList [ ("+", plus)
+                , ("-", plus)
+                ]
+
+mergeMap :: (Ord k, Num a) => M.Map k a -> M.Map k a -> M.Map k a
+mergeMap = M.unionWith (+)
+
 -- | The following table of operations represent the primary
 -- | constructs that form the Joy programming language.
-allOperations :: Map [Char] (State -> JoyResult)
-allOperations = fromList[ ("dup", dup)
-                        , ("+", plus)
-                        , ("-", plus)
-                        , ("i", i)
-                        , (".", dot)
-                        ]
+allOperations :: Map String (State -> JoyResult)
+allOperations = combinators
 
 findOperation :: String -> Maybe (State -> JoyResult)
 findOperation k = M.lookup k allOperations
@@ -68,6 +80,15 @@ dot state@(State (JoySymbol("."):ys) output env) = do
     print (show state)
     return . pure $ State ys output env
 dot _ = failFor "."
+
+-- | Primary combinators swap, dup, zap, unit, cat, cons, i, dip
+
+-- | Swap simply swaps the top two items on the stack
+swap (State (JoySymbol("swap"):ys) (x:y:xs) env) =
+  let newIn = ys
+      newOut = y:x:xs in
+      succeedWith $ State newIn newOut env
+swap _ = failFor "swap"
 
 -- | These combinators are special in that they dequote stack items
 -- | The "i" combinator simply executes the top item on the stack.
