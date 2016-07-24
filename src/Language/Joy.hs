@@ -6,6 +6,8 @@ import           Language.Joy.Parser    (parseJoy)
 import           Language.Joy.State     (liftState)
 import           Language.Joy.State     (State)
 
+-- | Run a single joy program passed as a string
+--
 runProgram :: String -> IO ()
 runProgram input = do
     case (liftState <$> parseJoy input) of

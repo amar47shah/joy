@@ -31,7 +31,7 @@ data Joy = JoyNumber Integer
          | JoyBool Bool
          | JoyAssignment String JoyProgram
          | JoyComment String
-           deriving ( Eq, Show )
+           deriving ( Eq, Ord, Show )
 
 class Pretty a where
     showJoy :: a -> String
