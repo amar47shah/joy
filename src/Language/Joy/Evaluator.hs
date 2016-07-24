@@ -74,8 +74,6 @@ runRecursive state step = do
               runRecursive (pure newState) (step+1)
       Left e -> return . Left $ e
 
--- Std Lib
-
 findOperation :: String -> Maybe (State -> JoyResult)
 findOperation k = M.lookup k allOperations
     where allOperations = M.fromList [ ("first", _first)
@@ -100,60 +98,65 @@ succeedWith = pure . Right
 failFor :: Monad m => String -> m (Either JoyError b)
 failFor op = failWith $ InvalidState ("Invalid state for operation " <> op)
 
--- | Basic addition
 _plus :: State -> JoyResult
-_plus (State (JoySymbol("+"):ys) ((JoyNumber x):(JoyNumber y):xs) env) =
-    succeedWith $ State ys (JoyNumber(x+y):xs) env
+_plus (State (JoySymbol("+"):input) ((JoyNumber x):(JoyNumber y):xs) env) =
+    succeedWith $ State input (JoyNumber(x+y):xs) env
 _plus _ = failFor "+"
 
--- | Basic subtraction
 _minus :: State -> JoyResult
-_minus (State (JoySymbol("-"):ys) ((JoyNumber x):(JoyNumber y):xs) env) =
-    succeedWith $ State ys (JoyNumber(x-y):xs) env
+_minus (State (JoySymbol("-"):input) ((JoyNumber x):(JoyNumber y):xs) env) =
+    succeedWith $ State input (JoyNumber(x-y):xs) env
 _minus _ = failFor "-"
 
--- | Duplicates the item on the top of the stack
+-- | Pushes an extra copy of X onto stack
+-- | X -> X X
 _dup :: State -> JoyResult
-_dup (State (JoySymbol("dup"):ys) (x:xs) env) =
-    succeedWith $ State ys (x:x:xs) env
+_dup (State (JoySymbol("dup"):input) (x:xs) env) =
+    succeedWith $ State input (x:x:xs) env
 _dup _ = failFor "dup"
 
--- | Dot is used to print the current state of the run stack
+-- | Dot is used to print the current state of the output stack
+-- |
 _dot :: State -> JoyResult
-_dot state@(State (JoySymbol("."):ys) output env) = do
+_dot state@(State (JoySymbol("."):input) output env) = do
     print . show . _output $ state
-    return . pure $ State ys output env
+    return . pure $ State input output env
 _dot _ = failFor "."
 
 -- | Interchanges X and Y on top of the stack
 -- | X Y -> Y X
-_swap (State (JoySymbol("swap"):ys) (x:y:xs) env) =
-  let newIn = ys
-      newOut = y:x:xs in
-      succeedWith $ State newIn newOut env
+_swap :: State -> JoyResult
+_swap (State (JoySymbol("swap"):input) (x:y:xs) env) =
+  let ouput = y:x:xs in
+      succeedWith $ State input ouput env
 _swap _ = failFor "swap"
 
 -- | Executes P. So, [P] i  ==  P
 -- | [P]  -> ...
 _i :: State -> JoyResult
-_i state@(State (JoySymbol("i"):ys) (JoyQuote vs:xs) env) =
-    succeedWith $ State (vs++ys) xs env
+_i state@(State (JoySymbol("i"):input) (JoyQuote vs:xs) env) =
+    succeedWith $ State (vs++input) xs env
 _i _ = failFor "i"
 
 -- | F is the first member of the non-empty aggregate A
 -- | A -> F
+_first :: State -> JoyResult
 _first (State (JoySymbol("first"):input) (JoyQuote(y:ys):xs) env) =
     succeedWith $ State input (y:xs) env
 _first _ = failFor "first"
 
 -- | R is the non-empty aggregate A with its first member removed
 -- | A -> R
+_rest :: State -> JoyResult
 _rest (State (JoySymbol("rest"):input) (JoyQuote(y:ys):xs) env) =
     succeedWith $ State input (JoyQuote(ys):xs) env
 _rest _ = failFor "rest"
 
 -- | Integer I is the number of elements of aggregate A
 -- | A  ->  I
+_size :: State -> JoyResult
 _size (State (JoySymbol("size"):input) (JoyQuote(qs):xs) env ) =
     succeedWith $ State input (JoyNumber(length qs):xs) env
 _size _ = failFor "size"
+
+_ifte (State (JoySymbol("ifte"):input) (p:t:e:xs) env) = failFor "Not sure how to implement :("
