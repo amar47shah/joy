@@ -59,5 +59,5 @@ Right (State {_input = [], _output = [JoyNumber 30,JoyNumber 20,JoyNumber 10], _
 + http://tunes.org/~iepos/joy.html
 + http://www.complang.tuwien.ac.at/anton/euroforth/ef01/thun01.pdf
 + https://github.com/nickelsworth/sympas/blob/master/text/18-minijoy.org
-
+* https://github.com/jeremyheiler/rejoice/blob/master/src/interp.c
 
