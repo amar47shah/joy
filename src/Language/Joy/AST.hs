@@ -24,7 +24,7 @@ data JoyError = InvalidState String
               | RuntimeError String
     deriving ( Eq, Show )
 
-data Joy = JoyNumber Integer
+data Joy = JoyNumber Int
          | JoySymbol String
          | JoyString String
          | JoyQuote [Joy]
