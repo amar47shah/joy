@@ -28,6 +28,6 @@ spec = do
 
     describe "parsing assignment" $ do
         it "correctly parses valid input" $ do
-            let input = "let square == dup *;"
+            let input = "DEFINE square == dup *;"
                 expected = [JoyAssignment "square" [JoySymbol "dup",JoySymbol "*"]]
             (parseJoy input) `shouldBe` (Right expected)

@@ -6,6 +6,17 @@ This is my attempt at implementing and understanding the Joy programming languag
 much in the way of reference material on this language.
 
 ```haskell
+λ> runProgram "[1] [2] [1 2 >] ifte ."
+"[JoyQuote [JoyNumber 2]]"
+λ> runProgram "[1] [2] [1 2 <] ifte ."
+"[JoyQuote [JoyNumber 1]]"
+λ> runProgram "[1 2 <] ."
+"[JoyQuote [JoyNumber 1,JoyNumber 2,JoySymbol \"<\"]]"
+λ> runProgram "[1 2 <] i ."
+"[JoyBool False]"
+```
+
+```haskell
 λ> let s = initialState [JoyNumber 10, JoyNumber 20, JoyNumber 30]
 λ> runRecursive (pure s) 0
 
@@ -60,4 +71,3 @@ Right (State {_input = [], _output = [JoyNumber 30,JoyNumber 20,JoyNumber 10], _
 + http://www.complang.tuwien.ac.at/anton/euroforth/ef01/thun01.pdf
 + https://github.com/nickelsworth/sympas/blob/master/text/18-minijoy.org
 * https://github.com/jeremyheiler/rejoice/blob/master/src/interp.c
-

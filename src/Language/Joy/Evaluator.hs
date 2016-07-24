@@ -51,6 +51,12 @@ run state@(State (i@(JoySymbol sym):xs) output env) =
               Nothing -> return . Left $ RuntimeError ("Unbound symbol " ++ sym)
 run state@(State input output env) = return $ Left (RuntimeError "Unsupported terminal clause")
 
+-- | An idea for evaluating program aggregates in isolation
+-- | For instance the ifte combinator needs to evaluate the inner p form and can use this as a utility
+-- | to do so
+evalP :: [Joy] -> Env -> IO (Either JoyError State)
+evalP quotation env = flip runRecursive 0 . pure $ State quotation [] env
+
 debug :: Show a => IO a -> IO ()
 debug x = x >>= print . show
 
@@ -85,6 +91,11 @@ findOperation k = M.lookup k allOperations
                                      , (".", _dot)
                                      , ("+", _plus)
                                      , ("-", _minus)
+                                     , (">", _gt)
+                                     , ("<", _lt)
+                                     , (">=", _gte)
+                                     , ("<=", _lte)
+                                     , ("ifte", _ifte)
                                      ]
 
 type JoyResult = IO (Either JoyError State)
@@ -107,6 +118,22 @@ _minus :: State -> JoyResult
 _minus (State (JoySymbol("-"):input) ((JoyNumber x):(JoyNumber y):xs) env) =
     succeedWith $ State input (JoyNumber(x-y):xs) env
 _minus _ = failFor "-"
+
+_gt (State (JoySymbol(">"):input) (x:y:xs) env) =
+    succeedWith $ State input (JoyBool(x > y):xs) env
+_gt _ = failFor ">"
+
+_gte (State (JoySymbol(">="):input) (x:y:xs) env) =
+    succeedWith $ State input (JoyBool(x >= y):xs) env
+_gte _ = failFor ">="
+
+_lt (State (JoySymbol("<"):input) (x:y:xs) env) =
+    succeedWith $ State input (JoyBool(x < y):xs) env
+_lt _ = failFor "<"
+
+_lte (State (JoySymbol("<="):input) (x:y:xs) env) =
+    succeedWith $ State input (JoyBool(x <= y):xs) env
+_lte _ = failFor "<="
 
 -- | Pushes an extra copy of X onto stack
 -- | X -> X X
@@ -159,4 +186,21 @@ _size (State (JoySymbol("size"):input) (JoyQuote(qs):xs) env ) =
     succeedWith $ State input (JoyNumber(length qs):xs) env
 _size _ = failFor "size"
 
-_ifte (State (JoySymbol("ifte"):input) (p:t:e:xs) env) = failFor "Not sure how to implement :("
+-- | Executes B. If that yields true, then executes T else executes F
+-- | [B] [T] [F]  ->  ...
+--
+-- @
+--   eg = State [JoySymbol"ifte"] [JoyQuote [JoyBool False], JoyQuote [JoyNumber 2], JoyQuote [JoyNumber 1]] M.empty
+-- @
+_ifte :: State -> JoyResult
+_ifte state@(State (JoySymbol("ifte"):input) (JoyQuote b:JoyQuote t:JoyQuote f:xs) env) = do
+    predicateEvaluated <- evalP b env
+    case predicateEvaluated of
+      Right result ->
+        let out = _output result in
+          case out of
+            [JoyBool True] -> succeedWith $ State input (JoyQuote t : xs) env
+            [JoyBool False] -> succeedWith $ State input (JoyQuote f : xs) env
+            _ -> error "Runtime failed to evaluate predicate to singular value"
+      Left e -> return . Left $ e
+_ifte _ = failFor "ifte"

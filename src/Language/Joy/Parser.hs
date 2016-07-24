@@ -38,6 +38,13 @@ lexi p = spaces *> p <* spaces
 parseNumber :: Parser Joy
 parseNumber = (JoyNumber . read) <$> many1 digit
 
+-- Additions to the spec ??
+parseTrue :: Parser Joy
+parseTrue = (\_ -> return $ JoyBool True) =<< string "true"
+
+parseFalse :: Parser Joy
+parseFalse = (\_ -> return $ JoyBool False) =<< string "false"
+
 parseString :: Parser Joy
 parseString = do
     _ <- char '"'
@@ -77,7 +84,7 @@ parseSymbol = do
 -- |
 parseAssignment :: Parser Joy
 parseAssignment = do
-    string "let"
+    string "DEFINE"
     var <- whiteSpace $ many1 alphaNum
     lexi $ string "=="
     expr <- many1 (whiteSpace parseExpr)
@@ -89,6 +96,8 @@ parseExpr = (try parseAssignment)
         <|> parseList
         <|> parseNumber
         <|> parseString
+        <|> parseTrue
+        <|> parseFalse
         <|> parseSymbol
         <|> parseComment
 
